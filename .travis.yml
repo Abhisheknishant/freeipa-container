@@ -4,7 +4,9 @@ sudo: required
 
 services:
 - docker
-
+arch:
+    - amd64
+    - arm64
 before_install:
 - if test -n "$ca" ; then sudo apt-get install -y libnss3-tools ; fi
 
@@ -49,26 +51,40 @@ matrix:
       env: dockerfile=fedora-rawhide
     - stage: build
       env: dockerfile=fedora-23 replica=none seccomp=unconfined readonly=--read-only
-  exclude:
-    - stage: build
-      env: dockerfile=rhel-7
-    - stage: build
-      env: dockerfile=rhel-8
-    - stage: build
-      env: dockerfile=fedora-30
-    - stage: build
-      env: dockerfile=fedora-29
-    - stage: build
-      env: dockerfile=fedora-28
-    - stage: build
-      env: dockerfile=fedora-27
-    - stage: build
-      env: dockerfile=fedora-26 replica=none
-    - stage: build
-      env: dockerfile=fedora-25 seccomp=unconfined
-    - stage: build
-      env: dockerfile=fedora-24 replica=none seccomp=unconfined
-
+    - arch: arm64
+      stage: sanity
+      script: if comm -23 <( echo "$FILES_CHANGED" ) <( echo "$TRAVIS_DOCKERFILES" ) | grep Dockerfile. ; then echo "Dockerfile modified but not tracked by Travis." >&2 ; exit 1 ; else echo "No unexpected Dockerfile changes, OK." ; fi
+    - arch: arm64
+      stage: build
+      env: dockerfile=fedora-32 readonly=--read-only
+    - arch: arm64
+      stage: build
+      env: dockerfile=fedora-32 ca=--external-ca readonly=--read-only
+    - arch: arm64
+      stage: build
+      env: dockerfile=fedora-32
+    - arch: arm64
+      stage: build
+      env: dockerfile=fedora-31
+    - arch: arm64
+      stage: build
+      env: dockerfile=centos-8 readonly=--read-only
+    - arch: arm64
+      stage: build
+      env: dockerfile=centos-8 ca=--external-ca readonly=--read-only
+    - arch: arm64
+      stage: build
+      env: dockerfile=centos-8
+    - arch: arm64
+      stage: build
+      env: dockerfile=centos-7
+    - arch: arm64
+      stage: build
+      env: dockerfile=fedora-rawhide
+    - arch: arm64
+      stage: build
+      env: dockerfile=fedora-23 replica=none seccomp=unconfined readonly=--read-only
+  
 script:
 - if test -n "$RUN_DOCKER_BUILD" ; then docker build -t local/freeipa-server -f Dockerfile.$dockerfile . ; fi
 - if test -n "$RUN_DOCKER_BUILD" ; then tests/run-master-and-replica.sh local/freeipa-server ; fi
